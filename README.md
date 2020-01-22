@@ -1,5 +1,5 @@
 # Malloc-Library-Part-1
-For project implement my own version of several memory allocation functions from the C standard library.
+Implement my own version of several memory allocation functions from the C standard library.
 
 I implement versions of malloc() and free(): 
 
