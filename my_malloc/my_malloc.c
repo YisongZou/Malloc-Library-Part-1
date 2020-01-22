@@ -5,7 +5,6 @@
 #define METADATA_SIZE 32
 
 size_t data_segment_size = 0;
-//size_t free_space_size = 0;
 
 typedef struct List_Node ListNode;
 //Using Linked list to manage the memory
@@ -80,8 +79,6 @@ void* ff_malloc(size_t size){
 	      split(current, size); 
             }
 	  current->free = 0;
-	  //free_space_size -= size;
-	  // free_space_size -= METADATA_SIZE;
         }
       else {
 	current = establish(last, size);
@@ -117,8 +114,6 @@ void ff_free(void* ptr){
   if(head && ptr > (void*)head && ptr < sbrk(0)){ 
     ListNode*  current = (ListNode*)((char*)(ptr) - METADATA_SIZE);
     current->free = 1;
-    // free_space_size += current->size;
-    // free_space_size += METADATA_SIZE;
     //  printf("free!\n");
     if (current->next){
        merge(current);
@@ -184,8 +179,6 @@ void *bf_malloc(size_t size){
 	split(current, size);
       }
           current->free = 0;
-	  // free_space_size -= size;
-	  // free_space_size -= METADATA_SIZE;
     }
     else {
       current = establish(last, size);
@@ -208,8 +201,6 @@ void bf_free(void *ptr){
   if(head && ptr > (void*)head && ptr < sbrk(0)){
     ListNode*  current = (ListNode*)((char*)(ptr) - METADATA_SIZE);
     current->free = 1;
-    //free_space_size += current->size;
-    // free_space_size += METADATA_SIZE;
     if (current->next){
       merge(current);
     }
@@ -220,14 +211,6 @@ void bf_free(void *ptr){
 }
 
 unsigned long get_data_segment_size(){
-  /* size_t size = 0;
-  ListNode* current = head;
-  while (current){
-    size += METADATA_SIZE;
-    size += current->size;
-    current = current->next;
-    }*/
-  // printf("%ld\n", size);
   return data_segment_size;
 }
 
