@@ -2,36 +2,38 @@
 #include <stdio.h>
 #include <unistd.h>
 
+//The size of the fields in the node except the field first_byte
 #define METADATA_SIZE 32
 
+//Global variable for the function get_data_segment_size( )
 size_t data_segment_size = 0;
 
 typedef struct List_Node ListNode;
 //Using Linked list to manage the memory
 struct List_Node{
-  ListNode* next;
-  ListNode* prev;
-  size_t size;
-  int placeholder;
-  int free;
-  char first_byte[1];
+  ListNode* next;//8 bytes
+  ListNode* prev;//8 bytes 
+  size_t size;//8 bytes 
+  int placeholder;//4 bytes
+  int free;//4 bytes
+  char first_byte[1];// Not counted into METADATA_SIZE
 };
 
 
-//The head of the linked List                                                                                                                                
+//The head of the linked List
 ListNode* head = NULL;
-
 
 //If there is still enough space established, split it into two parts
 void split(ListNode* current, size_t size){
   ListNode* splitted_second;
+  //Find the firast byte for the new node
   splitted_second = (ListNode*)(current->first_byte + size);
+  //connect the new node
   splitted_second->next = current->next;
   splitted_second->prev = current;
   splitted_second->size = current->size - size -METADATA_SIZE;
   splitted_second->free = 1;
-    //  printf("split!!\n");
-  if(current->next){
+    if(current->next){
   current->next->prev = splitted_second;
   }
   current->next = splitted_second;
@@ -41,11 +43,14 @@ void split(ListNode* current, size_t size){
 //Establish New nodes if there is not enough space
 ListNode* establish(ListNode* last, size_t size){
   ListNode* current = sbrk(0);
+  //If sbrk fails
   if (sbrk(METADATA_SIZE + size) == (void*)-1 ){
-    return NULL;
+  return NULL;
   }
+  //Update global variable
   data_segment_size += size;
   data_segment_size += METADATA_SIZE;
+  //Connect
   current->next = NULL;
   current->size = size;
   current->prev = last;
@@ -56,7 +61,8 @@ ListNode* establish(ListNode* last, size_t size){
   return current;
 }
 
-//FIND First FIT NODE 
+//Find the first fit block currently in the linked list, allocate an
+//address from the first free region with enough space to fit the requested allocation size. 
 ListNode *  ff_find(ListNode ** last, size_t size){
   ListNode * current = head;
     while (current){
@@ -75,12 +81,15 @@ void* ff_malloc(size_t size){
        if ( head ){
       last = head;
       if ( (current = ff_find(&last, size)) ){
-	  if (current->size - size > METADATA_SIZE){
+	//Is able to split
+	if (current->size - size > METADATA_SIZE){
 	      split(current, size); 
             }
+	//Found the node and use it without split
 	  current->free = 0;
         }
       else {
+	//Establish a note at the end
 	current = establish(last, size);
 	if (!current){
 	    return NULL;
@@ -88,6 +97,7 @@ void* ff_malloc(size_t size){
       }
     }
        else{
+	 //First time establish
 	   current = establish(NULL, size);
 	   if (!current){
 	       return NULL;
@@ -97,13 +107,14 @@ void* ff_malloc(size_t size){
        return current->first_byte;
 }
 
+//This function will help to merge the neighboring free blocks which
+//can solve the problem of poor region selection during malloc.
 ListNode* merge(ListNode * current){
   if (current->next && current->next->free){
     current->size += METADATA_SIZE;
     current->size += current->next->size;
     current->next = current->next->next;
-    //    printf("merge!!!!\n");
-    if ( current->next){
+      if ( current->next){
             current->next->prev= current;
         }
     }
@@ -114,24 +125,25 @@ void ff_free(void* ptr){
   if(head && ptr > (void*)head && ptr < sbrk(0)){ 
     ListNode*  current = (ListNode*)((char*)(ptr) - METADATA_SIZE);
     current->free = 1;
-    //  printf("free!\n");
     if (current->next){
        merge(current);
-       //  printf("mergeright!\n");
     }
     if (current->prev && current->prev->free){
       current = merge(current->prev);
-      //  printf("mergeleft!\n");
     }
    }
 }
 
-//FIND Best FIT NODE
+//The function bf_find( ) will find the best fit free node in the
+//linked list when a new chunk of memory need to be malloced, allocate
+//an address from the free region which has the smallest number of
+// bytes greater than or equal to the requested allocation size.
 ListNode* bf_find(ListNode ** last, size_t size){
   ListNode* current = head;
   ListNode* best = NULL;
   int rest = 0;
   int min_rest = 0;
+  //Get first data for min_rest
   while (current){
     if(current->free){
       rest = current->size - size;
@@ -147,10 +159,12 @@ ListNode* bf_find(ListNode ** last, size_t size){
     *last = current;
     current = current->next;
     }
+  //If there cannot find such node
   if(current == NULL){
     return current;
   }
-  current = head; 
+  current = head;
+  //Find the best fit node
   while (current){
     if(current->free){
         rest = current->size - size;
@@ -175,12 +189,15 @@ void *bf_malloc(size_t size){
   if ( head ){
     last = head;
     if ( (current = bf_find(&last, size)) ){
+      //Is able to split
       if (current->size - size > METADATA_SIZE){
 	split(current, size);
       }
+      //Is not able to split but find the node
           current->free = 0;
     }
     else {
+      //Establish a node at the end
       current = establish(last, size);
       if (!current){
             return NULL;
@@ -188,6 +205,7 @@ void *bf_malloc(size_t size){
     }
   }
   else{
+    //First time establish
     current = establish(NULL, size);
     if (!current){
       return NULL;
@@ -224,6 +242,5 @@ unsigned long get_data_segment_free_space_size(){
     }
       current = current->next;
   }
-  //  printf("%ld\n", size);*/
   return size;
 }
