@@ -145,3 +145,40 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
+
+/* 
+int main(int argc, char *argv[])
+{
+  const unsigned NUM_ITEMS = 10;
+  int i;
+  int size;
+  int sum = 0;
+  int expected_sum = 0;
+  int *array[NUM_ITEMS];
+
+  array[0] = (int *)MALLOC(8 * sizeof(int));
+  for (i=0; i < 8; i++) {
+    array[0][i] = 1;
+  }
+  //  FREE(array[0]);
+  array[1] = (int *)MALLOC(2 * sizeof(int));
+  for (i=0; i < 2; i++) {
+    array[1][i] = 2;
+  }
+  array[2] = (int *)MALLOC(2 * sizeof(int));
+for (i=0; i < 2; i++) {
+    array[2][i] = 3;
+  }
+  array[3] = (int *)MALLOC(2 * sizeof(int));
+for (i=0; i < 2; i++) {
+    array[3][i] = 5;
+  }
+ FREE(array[0]);
+  FREE(array[1]);
+  FREE(array[2]);
+  FREE(array[3]);
+   return 0;
+}
+*/
+
